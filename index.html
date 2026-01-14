@@ -3,119 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minecraft GitHub Edition</title>
+    <title>Minecraft Ultra Mobile</title>
     <style>
-        body { margin: 0; overflow: hidden; touch-action: none; background: #87CEEB; font-family: sans-serif; }
-        #crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 24px; pointer-events: none; z-index: 100; }
-        #ui { position: absolute; bottom: 20px; left: 10px; display: grid; grid-template-columns: repeat(3, 50px); gap: 5px; z-index: 10; }
-        .btn { width: 50px; height: 50px; background: rgba(0,0,0,0.5); border: 2px solid #fff; color: white; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: bold; }
-        #hotbar { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; background: rgba(0,0,0,0.8); padding: 5px; border-radius: 5px; z-index: 20; border: 2px solid #555; }
-        .slot { width: 35px; height: 35px; border: 1px solid #777; }
-        .active { border: 2px solid #fff; box-shadow: 0 0 5px #fff; }
-        #jump { position: absolute; bottom: 20px; right: 20px; width: 65px; height: 65px; background: rgba(0,0,0,0.5); border: 2px solid #fff; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        body { margin: 0; overflow: hidden; touch-action: none; background: #87CEEB; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: rgba(255,255,255,0.8); font-size: 30px; pointer-events: none; z-index: 100; }
+        
+        /* Controles de Movimento */
+        #controls { position: absolute; bottom: 30px; left: 30px; display: grid; grid-template-columns: repeat(3, 60px); gap: 10px; z-index: 10; }
+        .btn { width: 60px; height: 60px; background: rgba(0,0,0,0.4); border: 2px solid #fff; color: white; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-weight: bold; -webkit-user-select: none; }
+        .btn:active { background: rgba(255,255,255,0.3); }
+
+        /* Barra de Itens */
+        #hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; background: rgba(0,0,0,0.6); padding: 8px; border-radius: 10px; border: 2px solid #444; z-index: 20; }
+        .slot { width: 45px; height: 45px; border: 2px solid #555; cursor: pointer; border-radius: 4px; transition: 0.2s; }
+        .slot.active { border-color: #fff; transform: scale(1.1); box-shadow: 0 0 15px #fff; }
+
+        /* Botão de Pulo */
+        #jump-btn { position: absolute; bottom: 40px; right: 30px; width: 80px; height: 80px; background: rgba(0,0,0,0.4); border: 3px solid #fff; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; z-index: 10; font-weight: bold; }
     </style>
 </head>
 <body>
     <div id="crosshair">+</div>
-    <div id="ui">
-        <div></div><div class="btn" id="w">W</div><div></div>
-        <div class="btn" id="a">A</div><div class="btn" id="s">S</div><div class="btn" id="d">D</div>
+    
+    <div id="controls">
+        <div></div><div class="btn" id="w">↑</div><div></div>
+        <div class="btn" id="a">←</div><div class="btn" id="s">↓</div><div class="btn" id="d">→</div>
     </div>
+
     <div id="hotbar">
-        <div class="slot active" onclick="sel(0x567d46, this)" style="background:#567d46"></div>
-        <div class="slot" onclick="sel(0x888888, this)" style="background:#888888"></div>
-        <div class="slot" onclick="sel(0x795548, this)" style="background:#795548"></div>
-        <div class="slot" onclick="sel(0xffb7c5, this)" style="background:#ffb7c5"></div>
+        <div class="slot active" onclick="changeBlock(0x567d46, this)" style="background:#567d46" title="Grama"></div>
+        <div class="slot" onclick="changeBlock(0x888888, this)" style="background:#888888" title="Pedra"></div>
+        <div class="slot" onclick="changeBlock(0x795548, this)" style="background:#795548" title="Terra"></div>
+        <div class="slot" onclick="changeBlock(0xe3b448, this)" style="background:#e3b448" title="Tábua"></div>
+        <div class="slot" onclick="changeBlock(0xffffff, this)" style="background:rgba(255,255,255,0.5)" title="Vidro"></div>
     </div>
-    <div id="jump">PULO</div>
+
+    <div id="jump-btn">PULAR</div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
+        // --- CONFIGURAÇÃO BÁSICA ---
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
+        scene.fog = new THREE.Fog(0x87CEEB, 10, 50);
+
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
+        // Iluminação
+        const light = new THREE.AmbientLight(0xffffff, 0.7);
         scene.add(light);
+        const sun = new THREE.DirectionalLight(0xffffff, 0.5);
+        sun.position.set(10, 20, 10);
+        scene.add(sun);
 
-        const objects = [];
-        const geo = new THREE.BoxGeometry(1, 1, 1);
-        let curCol = 0x567d46;
+        const blocks = [];
+        const blockGeo = new THREE.BoxGeometry(1, 1, 1);
+        let selectedColor = 0x567d46;
 
-        function sel(c, e) {
-            curCol = c;
+        function changeBlock(col, el) {
+            selectedColor = col;
             document.querySelectorAll('.slot').forEach(s => s.classList.remove('active'));
-            e.classList.add('active');
+            el.classList.add('active');
         }
 
-        function b(x, y, z, c) {
-            const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: c }));
-            m.position.set(Math.round(x), Math.round(y), Math.round(z));
-            const ed = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.2 }));
-            m.add(ed);
-            scene.add(m);
-            objects.push(m);
+        function addBlock(x, y, z, color) {
+            const material = new THREE.MeshLambertMaterial({ 
+                color: color, 
+                transparent: color === 0xffffff, 
+                opacity: color === 0xffffff ? 0.6 : 1 
+            });
+            const mesh = new THREE.Mesh(blockGeo, material);
+            mesh.position.set(Math.round(x), Math.round(y), Math.round(z));
+            
+            // Bordas para estilo voxel
+            const edges = new THREE.EdgesGeometry(blockGeo);
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.1 }));
+            mesh.add(line);
+
+            scene.add(mesh);
+            blocks.push(mesh);
         }
 
-        for(let x=-8; x<8; x++) for(let z=-8; z<8; z++) b(x,0,z,0x567d46);
+        // Criar Chão Inicial
+        for(let x=-10; x<10; x++) {
+            for(let z=-10; z<10; z++) {
+                addBlock(x, 0, z, 0x567d46);
+            }
+        }
 
+        // --- CONTROLES E FÍSICA ---
         camera.position.set(0, 2, 5);
-        let mov={f:0,b:0,l:0,r:0}, vy=0, ground=false, yaw=0, pitch=0;
+        let move = {f:0, b:0, l:0, r:0}, velocityY = 0, canJump = false;
+        let yaw = 0, pitch = 0;
 
-        const ctrl = (id, k, v) => {
-            const e = document.getElementById(id);
-            e.ontouchstart = (ev) => { ev.preventDefault(); mov[k] = v; };
-            e.ontouchend = () => mov[k] = 0;
+        // Movimento Touch
+        const setupBtn = (id, key) => {
+            const el = document.getElementById(id);
+            el.ontouchstart = (e) => { e.preventDefault(); move[key] = 1; };
+            el.ontouchend = () => move[key] = 0;
         };
-        ctrl('w','f',1); ctrl('s','b',1); ctrl('a','l',1); ctrl('d','r',1);
-        document.getElementById('jump').ontouchstart = (e) => { e.preventDefault(); if(ground) vy=0.15; };
+        setupBtn('w','f'); setupBtn('s','b'); setupBtn('a','l'); setupBtn('d','r');
+        document.getElementById('jump-btn').ontouchstart = (e) => { e.preventDefault(); if(canJump) velocityY = 0.15; };
 
-        let lx, ly;
-        document.addEventListener('touchstart', e => { lx = e.touches[0].pageX; ly = e.touches[0].pageY; });
+        // Câmera e Ação (Lado Direito)
+        let lastX, lastY, touchStartTime;
+        document.addEventListener('touchstart', e => {
+            if(e.touches[0].pageX > window.innerWidth / 2) {
+                lastX = e.touches[0].pageX; lastY = e.touches[0].pageY;
+                touchStartTime = Date.now();
+            }
+        });
+
         document.addEventListener('touchmove', e => {
-            if(e.touches[0].pageX > window.innerWidth/2) {
-                yaw -= (e.touches[0].pageX - lx) * 0.007;
-                pitch -= (e.touches[0].pageY - ly) * 0.007;
+            if(lastX && e.touches[0].pageX > window.innerWidth / 2) {
+                yaw -= (e.touches[0].pageX - lastX) * 0.005;
+                pitch -= (e.touches[0].pageY - lastY) * 0.005;
                 pitch = Math.max(-1.5, Math.min(1.5, pitch));
-                lx = e.touches[0].pageX; ly = e.touches[0].pageY;
+                lastX = e.touches[0].pageX; lastY = e.touches[0].pageY;
             }
         });
 
         document.addEventListener('touchend', e => {
-            if(e.target.tagName !== 'CANVAS') return;
-            const r = new THREE.Raycaster();
-            r.setFromCamera(new THREE.Vector2(0,0), camera);
-            const h = r.intersectObjects(objects);
-            if(h.length > 0) {
-                const p = h[0].object.position;
-                const n = h[0].face.normal;
-                b(p.x+n.x, p.y+n.y, p.z+n.z, curCol);
+            if(e.target.tagName !== 'CANVAS' || !touchStartTime) return;
+            const duration = Date.now() - touchStartTime;
+            
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+            const intersects = raycaster.intersectObjects(blocks);
+
+            if(intersects.length > 0) {
+                if(duration > 500) { // QUEBRAR (Toque Longo)
+                    const obj = intersects[0].object;
+                    if(obj.position.y !== 0 || blocks.length > 100) { // Não deixa quebrar o chão infinito se quiser
+                        scene.remove(obj);
+                        blocks.splice(blocks.indexOf(obj), 1);
+                    }
+                } else { // COLOCAR (Toque Rápido)
+                    const p = intersects[0].object.position;
+                    const n = intersects[0].face.normal;
+                    addBlock(p.x + n.x, p.y + n.y, p.z + n.z, selectedColor);
+                }
             }
+            touchStartTime = 0;
         });
 
+        // Loop de Animação
         function animate() {
             requestAnimationFrame(animate);
             camera.rotation.set(pitch, yaw, 0, 'YXZ');
-            vy -= 0.008; camera.position.y += vy;
-            if(camera.position.y < -10) camera.position.set(0,2,0);
 
-            const ray = new THREE.Raycaster(camera.position, new THREE.Vector3(0,-1,0));
-            const h = ray.intersectObjects(objects);
-            if(h.length > 0 && h[0].distance < 1.6) {
-                camera.position.y = h[0].point.y + 1.6;
-                vy = 0; ground = true;
-            } else ground = false;
+            // Gravidade e Colisão simples
+            velocityY -= 0.008;
+            camera.position.y += velocityY;
 
-            const s = 0.12;
-            if(mov.f) camera.translateZ(-s); if(mov.b) camera.translateZ(s);
-            if(mov.l) camera.translateX(-s); if(mov.r) camera.translateX(s);
+            const groundRay = new THREE.Raycaster(camera.position, new THREE.Vector3(0,-1,0));
+            const hit = groundRay.intersectObjects(blocks);
+            if(hit.length > 0 && hit[0].distance < 1.6) {
+                camera.position.y = hit[0].point.y + 1.6;
+                velocityY = 0;
+                canJump = true;
+            } else {
+                canJump = false;
+            }
+
+            // Velocidade de movimento
+            const speed = 0.12;
+            if(move.f) camera.translateZ(-speed); if(move.b) camera.translateZ(speed);
+            if(move.l) camera.translateX(-speed); if(move.r) camera.translateX(speed);
+
             renderer.render(scene, camera);
         }
         animate();
+
+        // Ajuste de tela
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     </script>
 </body>
-                                                                        </html>
-  
+</html>
