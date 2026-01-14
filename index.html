@@ -3,23 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minecraft Ultra Mobile</title>
+    <title>Minecraft Geração X</title>
     <style>
         body { margin: 0; overflow: hidden; touch-action: none; background: #87CEEB; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        #crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: rgba(255,255,255,0.8); font-size: 30px; pointer-events: none; z-index: 100; }
+        #crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: rgba(255,255,255,0.8); font-size: 30px; pointer-events: none; z-index: 100; text-shadow: 0 0 5px black; }
         
-        /* Controles de Movimento */
         #controls { position: absolute; bottom: 30px; left: 30px; display: grid; grid-template-columns: repeat(3, 60px); gap: 10px; z-index: 10; }
-        .btn { width: 60px; height: 60px; background: rgba(0,0,0,0.4); border: 2px solid #fff; color: white; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-weight: bold; -webkit-user-select: none; }
+        .btn { width: 60px; height: 60px; background: rgba(0,0,0,0.4); border: 2px solid #fff; color: white; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-weight: bold; -webkit-user-select: none; font-size: 24px; }
         .btn:active { background: rgba(255,255,255,0.3); }
 
-        /* Barra de Itens */
         #hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; background: rgba(0,0,0,0.6); padding: 8px; border-radius: 10px; border: 2px solid #444; z-index: 20; }
-        .slot { width: 45px; height: 45px; border: 2px solid #555; cursor: pointer; border-radius: 4px; transition: 0.2s; }
+        .slot { width: 45px; height: 45px; border: 2px solid #555; cursor: pointer; border-radius: 4px; transition: 0.2s; background-size: cover; background-position: center; }
         .slot.active { border-color: #fff; transform: scale(1.1); box-shadow: 0 0 15px #fff; }
 
-        /* Botão de Pulo */
-        #jump-btn { position: absolute; bottom: 40px; right: 30px; width: 80px; height: 80px; background: rgba(0,0,0,0.4); border: 3px solid #fff; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; z-index: 10; font-weight: bold; }
+        #jump-btn { position: absolute; bottom: 40px; right: 30px; width: 80px; height: 80px; background: rgba(0,0,0,0.4); border: 3px solid #fff; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; z-index: 10; font-weight: bold; font-size: 20px; }
     </style>
 </head>
 <body>
@@ -31,21 +28,27 @@
     </div>
 
     <div id="hotbar">
-        <div class="slot active" onclick="changeBlock(0x567d46, this)" style="background:#567d46" title="Grama"></div>
-        <div class="slot" onclick="changeBlock(0x888888, this)" style="background:#888888" title="Pedra"></div>
-        <div class="slot" onclick="changeBlock(0x795548, this)" style="background:#795548" title="Terra"></div>
-        <div class="slot" onclick="changeBlock(0xe3b448, this)" style="background:#e3b448" title="Tábua"></div>
-        <div class="slot" onclick="changeBlock(0xffffff, this)" style="background:rgba(255,255,255,0.5)" title="Vidro"></div>
+        <div class="slot active" onclick="changeBlock('grass', this)" style="background:#567d46" title="Grama"></div>
+        <div class="slot" onclick="changeBlock('dirt', this)" style="background:#795548" title="Terra"></div>
+        <div class="slot" onclick="changeBlock('stone', this)" style="background:#888888" title="Pedra"></div>
+        <div class="slot" onclick="changeBlock('wood', this)" style="background:#a0522d" title="Madeira"></div>
+        <div class="slot" onclick="changeBlock('leaves', this)" style="background:#228b22" title="Folhas"></div>
+        <div class="slot" onclick="changeBlock('sand', this)" style="background:#f0e68c" title="Areia"></div>
+        <div class="slot" onclick="changeBlock('water', this)" style="background:rgba(0,100,255,0.6)" title="Água"></div>
     </div>
 
     <div id="jump-btn">PULAR</div>
+
+    <audio id="walkSound" src="https://www.soundjay.com/buttons/sounds/button-7.mp3" preload="auto"></audio>
+    <audio id="placeSound" src="https://www.soundjay.com/buttons/sounds/button-10.mp3" preload="auto"></audio>
+    <audio id="breakSound" src="https://www.soundjay.com/buttons/sounds/button-18.mp3" preload="auto"></audio>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         // --- CONFIGURAÇÃO BÁSICA ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87CEEB);
-        scene.fog = new THREE.Fog(0x87CEEB, 10, 50);
+        scene.background = new THREE.Color(0x87CEEB); // Céu azul
+        scene.fog = new THREE.Fog(0x87CEEB, 20, 100); // Névoa
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -54,57 +57,160 @@
         document.body.appendChild(renderer.domElement);
 
         // Iluminação
-        const light = new THREE.AmbientLight(0xffffff, 0.7);
+        const light = new THREE.AmbientLight(0xffffff, 0.6); // Luz ambiente suave
         scene.add(light);
-        const sun = new THREE.DirectionalLight(0xffffff, 0.5);
-        sun.position.set(10, 20, 10);
+        const sun = new THREE.DirectionalLight(0xffffff, 0.6); // Luz do sol
+        sun.position.set(20, 40, 20); // Posição do sol
+        sun.castShadow = true; // Habilita sombras
+        sun.shadow.mapSize.width = 1024;
+        sun.shadow.mapSize.height = 1024;
+        sun.shadow.camera.near = 0.5;
+        sun.shadow.camera.far = 100;
+        sun.shadow.camera.left = -50;
+        sun.shadow.camera.right = 50;
+        sun.shadow.camera.top = 50;
+        sun.shadow.camera.bottom = -50;
         scene.add(sun);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-        const blocks = [];
+        const objects = []; // Armazena todos os blocos e entidades
         const blockGeo = new THREE.BoxGeometry(1, 1, 1);
-        let selectedColor = 0x567d46;
 
-        function changeBlock(col, el) {
-            selectedColor = col;
+        const blockTypes = {
+            'grass': { color: 0x567d46, transparent: false },
+            'dirt': { color: 0x795548, transparent: false },
+            'stone': { color: 0x888888, transparent: false },
+            'wood': { color: 0xa0522d, transparent: false },
+            'leaves': { color: 0x228b22, transparent: true, opacity: 0.7 },
+            'sand': { color: 0xf0e68c, transparent: false },
+            'water': { color: 0x0064ff, transparent: true, opacity: 0.6 }
+        };
+        let selectedBlockType = 'grass';
+
+        // Sons
+        const walkSound = document.getElementById('walkSound');
+        const placeSound = document.getElementById('placeSound');
+        const breakSound = document.getElementById('breakSound');
+
+        function playSound(sound) {
+            sound.currentTime = 0;
+            sound.play();
+        }
+
+        function changeBlock(type, el) {
+            selectedBlockType = type;
             document.querySelectorAll('.slot').forEach(s => s.classList.remove('active'));
             el.classList.add('active');
         }
 
-        function addBlock(x, y, z, color) {
+        function addBlock(x, y, z, type) {
+            const blockData = blockTypes[type];
+            if (!blockData) return;
+
             const material = new THREE.MeshLambertMaterial({ 
-                color: color, 
-                transparent: color === 0xffffff, 
-                opacity: color === 0xffffff ? 0.6 : 1 
+                color: blockData.color, 
+                transparent: blockData.transparent, 
+                opacity: blockData.opacity || 1 
             });
             const mesh = new THREE.Mesh(blockGeo, material);
             mesh.position.set(Math.round(x), Math.round(y), Math.round(z));
+            mesh.receiveShadow = true;
+            mesh.castShadow = true;
             
             // Bordas para estilo voxel
             const edges = new THREE.EdgesGeometry(blockGeo);
-            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.1 }));
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.15 }));
             mesh.add(line);
 
             scene.add(mesh);
-            blocks.push(mesh);
+            objects.push(mesh);
+            return mesh;
         }
 
-        // Criar Chão Inicial
-        for(let x=-10; x<10; x++) {
-            for(let z=-10; z<10; z++) {
-                addBlock(x, 0, z, 0x567d46);
+        // --- GERAÇÃO DE MUNDO MAIS AVANÇADA ---
+        const WORLD_SIZE = 30; // Tamanho do mundo (de -SIZE a SIZE)
+        const TERRAIN_HEIGHT_SCALE = 3; // Quão montanhoso o terreno é
+        const TREE_DENSITY = 0.03; // Chance de uma árvore nascer (0 a 1)
+
+        const noise = new SimplexNoise(); // Biblioteca para gerar terreno "natural" (adicionar ao HTML se quiser usar: <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>)
+
+        function generateChunk(offsetX, offsetZ) {
+            for(let x = offsetX; x < offsetX + WORLD_SIZE; x++) {
+                for(let z = offsetZ; z < offsetZ + WORLD_SIZE; z++) {
+                    const height = Math.round(noise.noise2D(x / 20, z / 20) * TERRAIN_HEIGHT_SCALE);
+                    
+                    // Chão base
+                    for (let y = 0; y <= height; y++) {
+                        addBlock(x, y, z, y === height ? 'grass' : 'dirt');
+                    }
+
+                    // Chance de Árvore
+                    if (y === height && Math.random() < TREE_DENSITY) {
+                        const treeHeight = Math.floor(Math.random() * 3) + 3; // 3 a 5 de altura
+                        for (let ty = 1; ty <= treeHeight; ty++) {
+                            addBlock(x, height + ty, z, 'wood');
+                        }
+                        // Folhas (simples)
+                        addBlock(x, height + treeHeight + 1, z, 'leaves');
+                        addBlock(x + 1, height + treeHeight, z, 'leaves');
+                        addBlock(x - 1, height + treeHeight, z, 'leaves');
+                        addBlock(x, height + treeHeight, z + 1, 'leaves');
+                        addBlock(x, height + treeHeight, z - 1, 'leaves');
+                    }
+                }
             }
         }
 
-        // --- CONTROLES E FÍSICA ---
-        camera.position.set(0, 2, 5);
+        generateChunk(-WORLD_SIZE/2, -WORLD_SIZE/2); // Gera o mundo inicial no centro
+
+        // --- ENTIDADE SIMULADA (Mob/Animal) ---
+        class SimpleMob {
+            constructor(x, y, z, color) {
+                const mobGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+                const mobMat = new THREE.MeshLambertMaterial({ color: color });
+                this.mesh = new THREE.Mesh(mobGeo, mobMat);
+                this.mesh.position.set(x, y, z);
+                this.mesh.castShadow = true;
+                scene.add(this.mesh);
+                objects.push(this.mesh); // Adiciona aos objetos para interagir com raycaster
+                this.direction = new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+                this.speed = 0.03;
+                this.nextMoveTime = Date.now() + Math.random() * 3000 + 1000; // Muda de direção a cada 1-4 segundos
+            }
+
+            update() {
+                if (Date.now() > this.nextMoveTime) {
+                    this.direction.set(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+                    this.nextMoveTime = Date.now() + Math.random() * 3000 + 1000;
+                }
+
+                this.mesh.position.add(this.direction.clone().multiplyScalar(this.speed));
+                this.mesh.position.y -= 0.05; // Simula gravidade para o mob
+
+                // Colisão simples com o chão para o mob
+                const raycasterMob = new THREE.Raycaster(this.mesh.position, new THREE.Vector3(0, -1, 0));
+                const intersectsMob = raycasterMob.intersectObjects(objects.filter(o => o !== this.mesh)); // Não colide consigo mesmo
+                if (intersectsMob.length > 0 && intersectsMob[0].distance < 0.5) {
+                    this.mesh.position.y = intersectsMob[0].point.y + 0.5;
+                }
+            }
+        }
+
+        const mob = new SimpleMob(5, 5, 5, 0xffa07a); // Um mob de exemplo (cor salmão)
+
+        // --- CONTROLES E FÍSICA DO JOGADOR ---
+        camera.position.set(0, 5, 0); // Começa um pouco mais alto
         let move = {f:0, b:0, l:0, r:0}, velocityY = 0, canJump = false;
         let yaw = 0, pitch = 0;
+        let isWalking = false;
+        let lastWalkSoundTime = 0;
 
         // Movimento Touch
         const setupBtn = (id, key) => {
             const el = document.getElementById(id);
-            el.ontouchstart = (e) => { e.preventDefault(); move[key] = 1; };
-            el.ontouchend = () => move[key] = 0;
+            el.ontouchstart = (e) => { e.preventDefault(); move[key] = 1; isWalking = true; };
+            el.ontouchend = () => { move[key] = 0; if(!Object.values(move).some(v => v === 1)) isWalking = false; };
         };
         setupBtn('w','f'); setupBtn('s','b'); setupBtn('a','l'); setupBtn('d','r');
         document.getElementById('jump-btn').ontouchstart = (e) => { e.preventDefault(); if(canJump) velocityY = 0.15; };
@@ -122,7 +228,7 @@
             if(lastX && e.touches[0].pageX > window.innerWidth / 2) {
                 yaw -= (e.touches[0].pageX - lastX) * 0.005;
                 pitch -= (e.touches[0].pageY - lastY) * 0.005;
-                pitch = Math.max(-1.5, Math.min(1.5, pitch));
+                pitch = Math.max(-1.5, Math.min(1.5), pitch); // Limita o olhar para cima/baixo
                 lastX = e.touches[0].pageX; lastY = e.touches[0].pageY;
             }
         });
@@ -133,35 +239,38 @@
             
             const raycaster = new THREE.Raycaster();
             raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
-            const intersects = raycaster.intersectObjects(blocks);
+            const intersects = raycaster.intersectObjects(objects);
 
             if(intersects.length > 0) {
                 if(duration > 500) { // QUEBRAR (Toque Longo)
                     const obj = intersects[0].object;
-                    if(obj.position.y !== 0 || blocks.length > 100) { // Não deixa quebrar o chão infinito se quiser
-                        scene.remove(obj);
-                        blocks.splice(blocks.indexOf(obj), 1);
-                    }
+                    scene.remove(obj);
+                    objects.splice(objects.indexOf(obj), 1);
+                    playSound(breakSound);
                 } else { // COLOCAR (Toque Rápido)
                     const p = intersects[0].object.position;
                     const n = intersects[0].face.normal;
-                    addBlock(p.x + n.x, p.y + n.y, p.z + n.z, selectedColor);
+                    addBlock(p.x + n.x, p.y + n.y, p.z + n.z, selectedBlockType);
+                    playSound(placeSound);
                 }
             }
             touchStartTime = 0;
         });
 
-        // Loop de Animação
+        // Loop de Animação Principal
         function animate() {
             requestAnimationFrame(animate);
             camera.rotation.set(pitch, yaw, 0, 'YXZ');
 
-            // Gravidade e Colisão simples
+            // Atualiza Mob
+            mob.update();
+
+            // Gravidade e Colisão do Jogador
             velocityY -= 0.008;
             camera.position.y += velocityY;
 
             const groundRay = new THREE.Raycaster(camera.position, new THREE.Vector3(0,-1,0));
-            const hit = groundRay.intersectObjects(blocks);
+            const hit = groundRay.intersectObjects(objects);
             if(hit.length > 0 && hit[0].distance < 1.6) {
                 camera.position.y = hit[0].point.y + 1.6;
                 velocityY = 0;
@@ -170,10 +279,18 @@
                 canJump = false;
             }
 
-            // Velocidade de movimento
+            // Movimento do Jogador
             const speed = 0.12;
             if(move.f) camera.translateZ(-speed); if(move.b) camera.translateZ(speed);
             if(move.l) camera.translateX(-speed); if(move.r) camera.translateX(speed);
+            
+            // Som de passos
+            if (isWalking && canJump && (Date.now() - lastWalkSoundTime > 400)) {
+                playSound(walkSound);
+                lastWalkSoundTime = Date.now();
+            } else if (!isWalking || !canJump) {
+                walkSound.pause();
+            }
 
             renderer.render(scene, camera);
         }
@@ -187,4 +304,5 @@
         });
     </script>
 </body>
-</html>
+    </html>
+    
